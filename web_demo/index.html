@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Maze AI Demo</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background-color: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .maze-container {
+            display: flex;
+            justify-content: center;
+            margin: 30px 0;
+        }
+        .maze {
+            display: grid;
+            grid-template-columns: repeat(4, 60px);
+            grid-template-rows: repeat(4, 60px);
+            gap: 2px;
+            border: 3px solid #333;
+            padding: 10px;
+            background-color: #333;
+        }
+        .cell {
+            width: 60px;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            font-weight: bold;
+            border-radius: 4px;
+        }
+        .wall {
+            background-color: #333;
+        }
+        .empty {
+            background-color: #fff;
+        }
+        .start {
+            background-color: #4CAF50;
+            color: white;
+        }
+        .goal {
+            background-color: #f44336;
+            color: white;
+        }
+        .agent {
+            background-color: #2196F3;
+            color: white;
+        }
+        .controls {
+            text-align: center;
+            margin: 30px 0;
+        }
+        button {
+            background-color: #2196F3;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            margin: 5px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #1976D2;
+        }
+        button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+        .info {
+            text-align: center;
+            margin: 20px 0;
+            padding: 15px;
+            background-color: #e3f2fd;
+            border-radius: 5px;
+        }
+        .stats {
+            display: flex;
+            justify-content: space-around;
+            margin: 20px 0;
+            padding: 15px;
+            background-color: #f9f9f9;
+            border-radius: 5px;
+        }
+        .stat {
+            text-align: center;
+        }
+        .stat-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #2196F3;
+        }
+        .description {
+            margin: 30px 0;
+            line-height: 1.6;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🤖 Maze AI Demo</h1>
+        
+        <div class="description">
+            <p>This demo shows an AI agent that has learned to navigate through a maze using Q-learning reinforcement learning. 
+            The agent (blue) starts at position S and needs to reach the goal G while avoiding walls (#).</p>
+        </div>
+
+        <div class="maze-container">
+            <div class="maze" id="maze"></div>
+        </div>
+
+        <div class="controls">
+            <button onclick="startDemo()">Start AI Demo</button>
+            <button onclick="resetMaze()">Reset</button>
+            <button onclick="stepByStep()" id="stepBtn" disabled>Next Step</button>
+        </div>
+
+        <div class="stats">
+            <div class="stat">
+                <div class="stat-value" id="steps">0</div>
+                <div>Steps</div>
+            </div>
+            <div class="stat">
+                <div class="stat-value" id="reward">0</div>
+                <div>Total Reward</div>
+            </div>
+            <div class="stat">
+                <div class="stat-value" id="status">Ready</div>
+                <div>Status</div>
+            </div>
+        </div>
+
+        <div class="info">
+            <p><strong>Legend:</strong> 
+            <span style="color: #4CAF50;">S = Start</span> | 
+            <span style="color: #f44336;">G = Goal</span> | 
+            <span style="color: #333;"># = Wall</span> | 
+            <span style="color: #2196F3;">A = Agent</span></p>
+        </div>
+    </div>
+
+    <script>
+        // Maze configuration (same as in Python code)
+        const mazeMap = [
+            "S.##",
+            "#.#.",
+            "#.#G",
+            "...."
+        ];
+
+        // Pre-computed optimal path from Q-learning training
+        const optimalPath = [
+            [0, 0], // Start
+            [0, 1], // Right
+            [1, 1], // Down
+            [2, 1], // Down
+            [3, 1], // Down
+            [3, 2], // Right
+            [3, 3], // Right
+            [2, 3]  // Up to Goal
+        ];
+
+        let currentStep = 0;
+        let totalReward = 0;
+        let isRunning = false;
+        let stepMode = false;
+
+        function initializeMaze() {
+            const mazeElement = document.getElementById('maze');
+            mazeElement.innerHTML = '';
+            
+            for (let row = 0; row < mazeMap.length; row++) {
+                for (let col = 0; col < mazeMap[row].length; col++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'cell';
+                    cell.id = `cell-${row}-${col}`;
+                    
+                    const cellType = mazeMap[row][col];
+                    switch (cellType) {
+                        case '#':
+                            cell.className += ' wall';
+                            cell.textContent = '#';
+                            break;
+                        case 'S':
+                            cell.className += ' start';
+                            cell.textContent = 'S';
+                            break;
+                        case 'G':
+                            cell.className += ' goal';
+                            cell.textContent = 'G';
+                            break;
+                        default:
+                            cell.className += ' empty';
+                            break;
+                    }
+                    
+                    mazeElement.appendChild(cell);
+                }
+            }
+        }
+
+        function updateAgentPosition(row, col) {
+            // Clear previous agent position
+            document.querySelectorAll('.agent').forEach(cell => {
+                cell.classList.remove('agent');
+                const originalType = mazeMap[Math.floor(cell.id.split('-')[1])][Math.floor(cell.id.split('-')[2])];
+                if (originalType === 'S') {
+                    cell.textContent = 'S';
+                } else if (originalType === 'G') {
+                    cell.textContent = 'G';
+                } else {
+                    cell.textContent = '';
+                }
+            });
+            
+            // Set new agent position
+            const cell = document.getElementById(`cell-${row}-${col}`);
+            cell.classList.add('agent');
+            cell.textContent = 'A';
+        }
+
+        function updateStats() {
+            document.getElementById('steps').textContent = currentStep;
+            document.getElementById('reward').textContent = totalReward;
+        }
+
+        function resetMaze() {
+            currentStep = 0;
+            totalReward = 0;
+            isRunning = false;
+            stepMode = false;
+            
+            initializeMaze();
+            updateStats();
+            
+            document.getElementById('status').textContent = 'Ready';
+            document.getElementById('stepBtn').disabled = true;
+        }
+
+        function startDemo() {
+            if (isRunning) return;
+            
+            resetMaze();
+            isRunning = true;
+            stepMode = false;
+            document.getElementById('status').textContent = 'Running';
+            
+            runAutomaticDemo();
+        }
+
+        function runAutomaticDemo() {
+            if (currentStep >= optimalPath.length - 1) {
+                document.getElementById('status').textContent = 'Completed!';
+                isRunning = false;
+                return;
+            }
+            
+            const [row, col] = optimalPath[currentStep];
+            updateAgentPosition(row, col);
+            
+            // Calculate reward
+            if (currentStep === optimalPath.length - 1) {
+                totalReward += 100; // Goal reached
+            } else {
+                totalReward -= 1; // Step penalty
+            }
+            
+            currentStep++;
+            updateStats();
+            
+            if (currentStep < optimalPath.length) {
+                setTimeout(runAutomaticDemo, 800);
+            } else {
+                document.getElementById('status').textContent = 'Goal Reached!';
+                isRunning = false;
+            }
+        }
+
+        function stepByStep() {
+            if (currentStep >= optimalPath.length - 1) {
+                document.getElementById('status').textContent = 'Completed!';
+                document.getElementById('stepBtn').disabled = true;
+                return;
+            }
+            
+            const [row, col] = optimalPath[currentStep];
+            updateAgentPosition(row, col);
+            
+            // Calculate reward
+            if (currentStep === optimalPath.length - 1) {
+                totalReward += 100;
+            } else {
+                totalReward -= 1;
+            }
+            
+            currentStep++;
+            updateStats();
+            
+            if (currentStep >= optimalPath.length - 1) {
+                document.getElementById('status').textContent = 'Goal Reached!';
+                document.getElementById('stepBtn').disabled = true;
+            }
+        }
+
+        function enableStepMode() {
+            resetMaze();
+            stepMode = true;
+            document.getElementById('status').textContent = 'Step Mode';
+            document.getElementById('stepBtn').disabled = false;
+        }
+
+        // Initialize the maze when page loads
+        window.onload = function() {
+            initializeMaze();
+        };
+    </script>
+</body>
+</html>
+
