@@ -53,7 +53,7 @@ The agent trains over multiple episodes:
 ### Training the Agent
 ```bash
 cd src
-python3 train.py
+python train.py
 ```
 
 This will:
@@ -69,7 +69,7 @@ This will:
 #### Test the Maze Environment
 ```bash
 cd src
-python3 maze_env.py
+python maze_env.py
 ```
 
 #### Interactive Maze Navigation
@@ -116,4 +116,5 @@ Modify the Q-learning parameters in `train.py`:
 - Real-time training visualization
 - Multiple agents in the same environment
 - Maze generation algorithms
+
 
