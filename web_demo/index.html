@@ -1,10 +1,14 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <!-- Set character encoding to UTF-8 for proper text rendering -->
     <meta charset="UTF-8">
+    <!-- Ensure responsive design for various screen sizes -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Set the title of the webpage -->
     <title>Maze AI Demo</title>
     <style>
+        /* Style the body with a clean font, centered content, and light background */
         body {
             font-family: Arial, sans-serif;
             max-width: 1200px;
@@ -12,22 +16,26 @@
             padding: 20px;
             background-color: #f5f5f5;
         }
+        /* Container for the main content with white background and shadow */
         .container {
             background-color: white;
             padding: 30px;
             border-radius: 10px;
             box-shadow: 0 2px 10px rgba(0,0,0,0.1);
         }
+        /* Style the main heading */
         h1 {
             color: #333;
             text-align: center;
             margin-bottom: 30px;
         }
+        /* Center the maze within its container */
         .maze-container {
             display: flex;
             justify-content: center;
             margin: 30px 0;
         }
+        /* Define the maze as a 4x4 grid with spacing and border */
         .maze {
             display: grid;
             grid-template-columns: repeat(4, 60px);
@@ -37,6 +45,7 @@
             padding: 10px;
             background-color: #333;
         }
+        /* Style for each cell in the maze */
         .cell {
             width: 60px;
             height: 60px;
@@ -47,28 +56,35 @@
             font-weight: bold;
             border-radius: 4px;
         }
+        /* Style for wall cells (dark background) */
         .wall {
             background-color: #333;
         }
+        /* Style for empty (open path) cells */
         .empty {
             background-color: #fff;
         }
+        /* Style for the start position cell */
         .start {
             background-color: #4CAF50;
             color: white;
         }
+        /* Style for the goal position cell */
         .goal {
             background-color: #f44336;
             color: white;
         }
+        /* Style for the agent's current position */
         .agent {
             background-color: #2196F3;
             color: white;
         }
+        /* Center the control buttons */
         .controls {
             text-align: center;
             margin: 30px 0;
         }
+        /* Style for buttons */
         button {
             background-color: #2196F3;
             color: white;
@@ -80,13 +96,16 @@
             font-size: 16px;
             transition: background-color 0.3s;
         }
+        /* Hover effect for buttons */
         button:hover {
             background-color: #1976D2;
         }
+        /* Style for disabled buttons */
         button:disabled {
             background-color: #ccc;
             cursor: not-allowed;
         }
+        /* Style for the info box with legend */
         .info {
             text-align: center;
             margin: 20px 0;
@@ -94,6 +113,7 @@
             background-color: #e3f2fd;
             border-radius: 5px;
         }
+        /* Style for the stats display */
         .stats {
             display: flex;
             justify-content: space-around;
@@ -102,14 +122,17 @@
             background-color: #f9f9f9;
             border-radius: 5px;
         }
+        /* Style for individual stat sections */
         .stat {
             text-align: center;
         }
+        /* Style for stat values (e.g., steps, reward) */
         .stat-value {
             font-size: 24px;
             font-weight: bold;
             color: #2196F3;
         }
+        /* Style for the description text */
         .description {
             margin: 30px 0;
             line-height: 1.6;
@@ -118,39 +141,53 @@
     </style>
 </head>
 <body>
+    <!-- Main container for the demo -->
     <div class="container">
+        <!-- Page title with emoji -->
         <h1>🤖 Maze AI Demo</h1>
         
+        <!-- Description of the demo's purpose -->
         <div class="description">
             <p>This demo shows an AI agent that has learned to navigate through a maze using Q-learning reinforcement learning. 
             The agent (blue) starts at position S and needs to reach the goal G while avoiding walls (#).</p>
         </div>
 
+        <!-- Container for the maze display -->
         <div class="maze-container">
+            <!-- The maze grid will be populated dynamically by JavaScript -->
             <div class="maze" id="maze"></div>
         </div>
 
+        <!-- Control buttons for interacting with the demo -->
         <div class="controls">
+            <!-- Button to start the AI navigation demo -->
             <button onclick="startDemo()">Start AI Demo</button>
+            <!-- Button to reset the maze to its initial state -->
             <button onclick="resetMaze()">Reset</button>
+            <!-- Button to step through the AI's moves one at a time (initially disabled) -->
             <button onclick="stepByStep()" id="stepBtn" disabled>Next Step</button>
         </div>
 
+        <!-- Display for tracking steps, total reward, and status -->
         <div class="stats">
+            <!-- Number of steps taken -->
             <div class="stat">
                 <div class="stat-value" id="steps">0</div>
                 <div>Steps</div>
             </div>
+            <!-- Accumulated reward -->
             <div class="stat">
                 <div class="stat-value" id="reward">0</div>
                 <div>Total Reward</div>
             </div>
+            <!-- Current status of the demo -->
             <div class="stat">
                 <div class="stat-value" id="status">Ready</div>
                 <div>Status</div>
             </div>
         </div>
 
+        <!-- Legend explaining the maze symbols -->
         <div class="info">
             <p><strong>Legend:</strong> 
             <span style="color: #4CAF50;">S = Start</span> | 
@@ -159,44 +196,56 @@
             <span style="color: #2196F3;">A = Agent</span></p>
         </div>
     </div>
-
     <script>
-        // Maze configuration (same as in Python code)
+        // Define the maze layout as a 4x4 grid, matching the Python MazeEnv configuration
         const mazeMap = [
-            "S.##",
+            "S.##", // S = Start, . = Empty, # = Wall
             "#.#.",
-            "#.#G",
+            "#.#G", // G = Goal
             "...."
         ];
 
-        // Pre-computed optimal path from Q-learning training
+        // Pre-computed optimal path for the agent to follow, derived from Q-learning
         const optimalPath = [
-            [0, 0], // Start
-            [0, 1], // Right
-            [1, 1], // Down
-            [2, 1], // Down
-            [3, 1], // Down
-            [3, 2], // Right
-            [3, 3], // Right
-            [2, 3]  // Up to Goal
+            [0, 0], // Start position
+            [0, 1], // Move right
+            [1, 1], // Move down
+            [2, 1], // Move down
+            [3, 1], // Move down
+            [3, 2], // Move right
+            [3, 3], // Move right
+            [2, 3]  // Move up to reach Goal
         ];
 
+        // Track current step in the path
         let currentStep = 0;
+        // Track accumulated reward
         let totalReward = 0;
+        // Flag to indicate if the demo is running
         let isRunning = false;
+        // Flag for step-by-step mode
         let stepMode = false;
 
+        // Initialize the maze grid in the HTML
         function initializeMaze() {
+            // Get the maze container element
             const mazeElement = document.getElementById('maze');
+            // Clear any existing content
             mazeElement.innerHTML = '';
             
+            // Loop through each row and column of the maze map
             for (let row = 0; row < mazeMap.length; row++) {
                 for (let col = 0; col < mazeMap[row].length; col++) {
+                    // Create a new div for each cell
                     const cell = document.createElement('div');
+                    // Assign base class for styling
                     cell.className = 'cell';
+                    // Set unique ID for each cell (format: cell-row-col)
                     cell.id = `cell-${row}-${col}`;
                     
+                    // Get the cell type from the maze map
                     const cellType = mazeMap[row][col];
+                    // Apply appropriate styling based on cell type
                     switch (cellType) {
                         case '#':
                             cell.className += ' wall';
@@ -215,15 +264,18 @@
                             break;
                     }
                     
+                    // Add the cell to the maze container
                     mazeElement.appendChild(cell);
                 }
             }
         }
 
+        // Update the agent's position on the maze
         function updateAgentPosition(row, col) {
-            // Clear previous agent position
+            // Clear the 'agent' class from any previous position
             document.querySelectorAll('.agent').forEach(cell => {
                 cell.classList.remove('agent');
+                // Restore original cell content based on maze map
                 const originalType = mazeMap[Math.floor(cell.id.split('-')[1])][Math.floor(cell.id.split('-')[2])];
                 if (originalType === 'S') {
                     cell.textContent = 'S';
@@ -234,107 +286,138 @@
                 }
             });
             
-            // Set new agent position
+            // Set the new agent position
             const cell = document.getElementById(`cell-${row}-${col}`);
             cell.classList.add('agent');
             cell.textContent = 'A';
         }
 
+        // Update the displayed stats (steps and reward)
         function updateStats() {
             document.getElementById('steps').textContent = currentStep;
             document.getElementById('reward').textContent = totalReward;
         }
 
+        // Reset the maze to its initial state
         function resetMaze() {
+            // Reset tracking variables
             currentStep = 0;
             totalReward = 0;
             isRunning = false;
             stepMode = false;
             
+            // Reinitialize the maze grid
             initializeMaze();
+            // Update stats display
             updateStats();
             
+            // Set status to 'Ready'
             document.getElementById('status').textContent = 'Ready';
+            // Disable the step button
             document.getElementById('stepBtn').disabled = true;
         }
 
+        // Start the automatic AI demo
         function startDemo() {
+            // Prevent starting if demo is already running
             if (isRunning) return;
             
+            // Reset the maze to start fresh
             resetMaze();
             isRunning = true;
             stepMode = false;
+            // Update status to indicate demo is running
             document.getElementById('status').textContent = 'Running';
             
+            // Begin the automatic demo
             runAutomaticDemo();
         }
 
+        // Run the demo automatically with a delay between steps
         function runAutomaticDemo() {
+            // Stop if the last step has been reached
             if (currentStep >= optimalPath.length - 1) {
                 document.getElementById('status').textContent = 'Completed!';
                 isRunning = false;
                 return;
             }
             
+            // Get the next position from the optimal path
             const [row, col] = optimalPath[currentStep];
+            // Update the agent's position on the maze
             updateAgentPosition(row, col);
             
-            // Calculate reward
+            // Calculate reward for the current step
             if (currentStep === optimalPath.length - 1) {
-                totalReward += 100; // Goal reached
+                totalReward += 100; // Reward for reaching the goal
+            } else {
+                totalReward -= 1; // Penalty for each step
+            }
+            
+            // Increment the step counter
+            currentStep++;
+            // Update stats display
+            updateStats();
+            
+            // Continue to the next step or end the demo
+            if (currentStep < optimalPath.length) {
+                // Delay between steps for visibility (800ms)
+                setTimeout(runAutomaticDemo, 800);
+            } else {
+                // Update status when goal is reached
+                document.getElementById('status').textContent = 'Goal Reached!';
+                isRunning = false;
+            }
+        }
+
+        // Handle step-by-step navigation
+        function stepByStep() {
+            // Stop if the last step has been reached
+            if (currentStep >= optimalPath.length - 1) {
+                document.getElementById('status').textContent = 'Completed!';
+                document.getElementById('stepBtn').disabled = true;
+                return;
+            }
+            
+            // Get the next position from the optimal path
+            const [row, col] = optimalPath[currentStep];
+            // Update the agent's position
+            updateAgentPosition(row, col);
+            
+            // Calculate reward for the current step
+            if (currentStep === optimalPath.length - 1) {
+                totalReward += 100; // Goal reward
             } else {
                 totalReward -= 1; // Step penalty
             }
             
+            // Increment the step counter
             currentStep++;
+            // Update stats display
             updateStats();
             
-            if (currentStep < optimalPath.length) {
-                setTimeout(runAutomaticDemo, 800);
-            } else {
-                document.getElementById('status').textContent = 'Goal Reached!';
-                isRunning = false;
-            }
-        }
-
-        function stepByStep() {
-            if (currentStep >= optimalPath.length - 1) {
-                document.getElementById('status').textContent = 'Completed!';
-                document.getElementById('stepBtn').disabled = true;
-                return;
-            }
-            
-            const [row, col] = optimalPath[currentStep];
-            updateAgentPosition(row, col);
-            
-            // Calculate reward
-            if (currentStep === optimalPath.length - 1) {
-                totalReward += 100;
-            } else {
-                totalReward -= 1;
-            }
-            
-            currentStep++;
-            updateStats();
-            
+            // Check if the goal has been reached
             if (currentStep >= optimalPath.length - 1) {
                 document.getElementById('status').textContent = 'Goal Reached!';
                 document.getElementById('stepBtn').disabled = true;
             }
         }
 
+        // Enable step-by-step mode
         function enableStepMode() {
+            // Reset the maze to start fresh
             resetMaze();
             stepMode = true;
+            // Update status to indicate step mode
             document.getElementById('status').textContent = 'Step Mode';
+            // Enable the step button
             document.getElementById('stepBtn').disabled = false;
         }
 
-        // Initialize the maze when page loads
+        // Initialize the maze when the page loads
         window.onload = function() {
             initializeMaze();
         };
     </script>
 </body>
 </html>
-
