@@ -26,7 +26,7 @@ def main():
         
         if choice == "1":
             print("\n🚀 Training AI agent...")
-            os.system(f"cd {project_dir}/src && python3 train.py")
+            os.system(f"cd {project_dir}/src && python train.py")
             
         elif choice == "2":
             print("\n🌐 Opening web demo...")
